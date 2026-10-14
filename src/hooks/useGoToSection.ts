@@ -8,11 +8,20 @@ export const ScrollControlContext = createContext<
   ((progress: number) => void) | null
 >(null);
 
-/** Returns a function that glides to one of the stage's sections. */
+/**
+ * Returns a function that glides to one of the stage's sections, or null
+ * outside a <ScrollStage> (the mobile layout, where sections are plain
+ * elements with ids).
+ */
 export function useGoToSection() {
   const scrollToProgress = useContext(ScrollControlContext);
   return useCallback(
     (section: SectionKey) => scrollToProgress?.(SECTION_PROGRESS[section]),
     [scrollToProgress],
   );
+}
+
+/** Whether the scroll-driven stage is mounted, so section links can glide. */
+export function useHasScrollStage() {
+  return useContext(ScrollControlContext) !== null;
 }

@@ -2,11 +2,12 @@
 
 import type { ReactNode } from "react";
 import type { LinkTarget } from "@/content/site";
-import { useGoToSection } from "@/hooks/useGoToSection";
+import { useGoToSection, useHasScrollStage } from "@/hooks/useGoToSection";
 
 /**
  * A link to a section of the page (glides there) or out to another site (opens
- * in a new tab).
+ * in a new tab). Without the scroll stage (mobile) a section link scrolls to the
+ * element with that id.
  */
 export function SiteLink({
   target,
@@ -21,6 +22,7 @@ export function SiteLink({
   children: ReactNode;
 }) {
   const goTo = useGoToSection();
+  const hasStage = useHasScrollStage();
 
   if ("section" in target) {
     return (
@@ -30,7 +32,12 @@ export function SiteLink({
         aria-label={label}
         onClick={(e) => {
           e.preventDefault();
-          goTo(target.section);
+          if (hasStage) goTo(target.section);
+          else {
+            document
+              .getElementById(target.section)
+              ?.scrollIntoView({ behavior: "smooth" });
+          }
         }}
       >
         {children}

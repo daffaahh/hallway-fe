@@ -1,0 +1,38 @@
+import AboutSection from "@/components/about/AboutSection";
+import EventSection from "@/components/event/EventSection";
+import EventTransition from "@/components/event/EventTransition";
+import EventVideo from "@/components/event/EventVideo";
+import FooterSection from "@/components/footer/FooterSection";
+import GridTransition from "@/components/grid/GridTransition";
+import HeroBackdrop from "@/components/hero/HeroBackdrop";
+import HeroIntro from "@/components/hero/HeroIntro";
+import Navbar from "@/components/navbar/Navbar";
+import ScrollStage from "@/components/scroll/ScrollStage";
+import SmoothScroll from "@/components/scroll/SmoothScroll";
+import TenantsCursor from "@/components/tenants/TenantsCursor";
+import TenantsScene from "@/components/tenants/TenantsScene";
+
+/** The scroll-driven experience for wide screens: one sticky stage. */
+export default function DesktopExperience() {
+  return (
+    <>
+      <SmoothScroll />
+      {/* Scroll snap is switched off for now. To bring it back, import
+          ABOUT_END and SNAP_START from "@/config/timeline" and use
+          <ScrollStage snapFrom={SNAP_START} snapTo={ABOUT_END}>. */}
+      <ScrollStage>
+        <HeroBackdrop />
+        <GridTransition />
+        <Navbar />
+        <AboutSection />
+        <TenantsScene />
+        <EventVideo />
+        <EventTransition />
+        <EventSection />
+        <FooterSection />
+        <TenantsCursor />
+        <HeroIntro />
+      </ScrollStage>
+    </>
+  );
+}

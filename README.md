@@ -32,6 +32,9 @@ All files live in `public/`:
 src/
 ├── app/                        Next.js routes (page.tsx only composes sections)
 ├── components/
+│   ├── Experience.tsx          Picks desktop (scroll stage) or mobile (cards) by screen width
+│   ├── desktop/DesktopExperience.tsx  The sticky scroll stage, composed
+│   ├── mobile/                 Plain card layout for narrow screens (no scroll animation)
 │   ├── scroll/ScrollStage.tsx  Sticky scroll stage; publishes scroll progress
 │   ├── scroll/SmoothScroll.tsx Eases mouse-wheel scrolling (no dependency)
 │   ├── hero/                   HeroBackdrop (video + overlay), HeroIntro (logo, tagline)
@@ -56,7 +59,7 @@ src/
 └── lib/                        scroll.ts (clamp, easing, segment), styles.ts (shared classes)
 ```
 
-`page.tsx` is the whole composition:
+`page.tsx` renders `<Experience />`, which picks one of two trees with `useIsDesktop` (viewport ≥ 768px; the server and first paint assume mobile). The desktop tree (`DesktopExperience`) is:
 
 ```tsx
 <ScrollStage snapFrom={SNAP_START} snapTo={ABOUT_END}>
@@ -104,11 +107,25 @@ Clicking a tenant photo (Hobbies, FnB or Fashion) opens that category. The click
 
 Every photo carries the tenant it shows (`name` in `content/site.ts`); once a category is open that name is the photo's label, so labels always follow their photo. `tenants` is the order the list shows them. Hobbies: Pensil dan Kertas (`2.JPG`), Shadow Goods (`hobbies-1.JPG`), The Throne Room (`hobbies-2.JPG`). Fashion: Wearbobe (`3.JPG`), Lil public (`fashion-1.JPG`), eternalworks (`fashion-2.JPG`). FnB: Gelora Fantasi (`1.JPG`), Kedai Jaya Bersama (`FnB-1.jpeg`), Rameninpo (`FnB-2.jpeg`). Source photos with transparent side bars need `zoom` to crop them (a bar of 12.5% per side → `zoom: 1.34`). File names are case-sensitive on Linux hosts (`2.JPG`, `hobbies-1.JPG`).
 
+### Mobile
+
+Below 768px there is no scroll stage: `MobileLayout` is a plain stack of cards that follow the hero in the same order, each one riding up (rounded top corners, `-mt-8`) over the bottom of the one before it. There is no scroll-driven animation.
+
+| Card (id) | Content |
+| --- | --- |
+| Hero (`hero`) | Full-screen video, logo, tagline, hashtags |
+| About (`about`) | Title, photo, opening hours, paragraphs, Learn More ++ |
+| Tenants (`tenants`) | One photo per category; tap one to list its tenants (the other two photos with names), tap again to close; Join call to action |
+| Event (`event`) | Video (loaded only when near the viewport, `LazyVideo`), title, copy, two buttons |
+| Footer | "Be part of us?", address and email, link blocks (page links, Come Find Us, social), copyright and legal |
+
+A fixed top bar (white with `mix-blend-difference` so it reads on light and dark cards) holds the logo (back to the top) and Collaborate ++, which opens the same sidebar as on desktop. Section links scroll to the card with that id (`SiteLink` falls back to `scrollIntoView` when there is no stage). All copy and links come from `content/site.ts`, shared with desktop.
+
 ### Links
 
 `SiteLink` renders every site link. Targets live in `content/site.ts`:
 
-- **Section links** (`{ section: "tenants" | "event" | "hero" }`): glide the page to that section's resting scroll position (`SECTION_PROGRESS` in `config/timeline.ts`; the stage exposes the glide through `ScrollControlContext`, used via `useGoToSection`). Tenants and Event (navbar and footer) use these, and the navbar logo goes to the hero. The glide takes longer for longer trips and stops as soon as the user scrolls, touches or presses a key.
+- **Section links** (`{ section: "tenants" | "event" | "hero" }`): on desktop glide the page to that section's resting scroll position (`SECTION_PROGRESS` in `config/timeline.ts`; the stage exposes the glide through `ScrollControlContext`, used via `useGoToSection`). Tenants and Event (navbar and footer) use these, and the navbar logo goes to the hero. The glide takes longer for longer trips and stops as soon as the user scrolls, touches or presses a key.
 - **External links** (`{ href, external: true }`): open in a new tab (`noopener noreferrer`). Visit (navbar and footer) and "Come Find Us" go to the Google Maps link, Instagram to the Hallway Space profile; both URLs are in `LINKS`.
 - Still `href="#"` placeholders: Learn More, Join, the two event buttons, LinkedIn, Privacy policy and Terms & conditions.
 
