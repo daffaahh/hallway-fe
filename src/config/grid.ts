@@ -21,6 +21,19 @@ export function cellStyle(cell: Cell, bleed = ""): CSSProperties {
   };
 }
 
+/** Absolute position of a rectangular block of cells. */
+export function blockStyle(
+  block: typeof IMAGE_BLOCK,
+  bleed = "",
+): CSSProperties {
+  return {
+    left: `${colPercent(block.col)}%`,
+    top: `${rowPercent(block.row)}%`,
+    width: `calc(${(block.cols * 100) / COLS}%${bleed})`,
+    height: `calc(${(block.rows * 100) / ROWS}%${bleed})`,
+  };
+}
+
 // Verticals draw upward from the bottom, the first horizontal draws in from
 // the right and the second from the left. They retract back the way they came.
 export const LINES = [
@@ -32,8 +45,11 @@ export const LINES = [
   { axis: "h", pos: rowPercent(2), origin: "left" },
 ] as const;
 
-/** Cells that stay open and later reveal the photo (first two of the middle row). */
-export const IMAGE_BLOCK = { col: 0, row: 1, cols: 2, rows: 1 };
+/**
+ * Cells that stay open and later reveal the photo: the first three cells of
+ * the middle row, i.e. row 2, columns 1-3 (zero-based: row 1, cols 0-2).
+ */
+export const IMAGE_BLOCK = { col: 0, row: 1, cols: 3, rows: 1 };
 
 const ALL_CELLS: Cell[] = Array.from({ length: COLS * ROWS }, (_, i) => ({
   col: i % COLS,
@@ -46,5 +62,17 @@ const inImageBlock = (c: Cell) =>
   c.row >= IMAGE_BLOCK.row &&
   c.row < IMAGE_BLOCK.row + IMAGE_BLOCK.rows;
 
-export const IMAGE_CELLS = ALL_CELLS.filter(inImageBlock);
+// Tenants scene (zero-based; the user's "col 2 row 2" is { col: 1, row: 1 }).
+// Cells that fade to black: top-left and bottom-right.
+export const TENANT_BLACK_CELLS: Cell[] = [
+  { col: 0, row: 0 },
+  { col: 4, row: 2 },
+];
+// Cells that slide up a photo, left to right (matches TENANT_CARDS order).
+export const TENANT_PHOTO_CELLS: Cell[] = [
+  { col: 1, row: 1 },
+  { col: 3, row: 2 },
+  { col: 4, row: 1 },
+];
+
 export const COVER_CELLS = ALL_CELLS.filter((c) => !inImageBlock(c));

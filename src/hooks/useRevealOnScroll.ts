@@ -2,18 +2,35 @@
 
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import { easeOutCubic, segment } from "@/lib/scroll";
-import { TEXT_DURATION, TEXT_STEP } from "@/config/timeline";
+import {
+  TEXT_DURATION,
+  TEXT_EXIT_DURATION,
+  TEXT_EXIT_STEP,
+  TEXT_STEP,
+} from "@/config/timeline";
 import { useScrollProgress } from "./useScrollProgress";
 
 /**
  * Slides every `[data-reveal]` element inside `ref` up from behind its mask,
  * in DOM order with a small stagger, starting at scroll progress `start`.
+ * With `exitStart` they slide back down at that progress.
  */
 export function useRevealOnScroll(
   ref: RefObject<HTMLElement | null>,
   start: number,
-  duration = TEXT_DURATION,
-  step = TEXT_STEP,
+  {
+    exitStart,
+    duration = TEXT_DURATION,
+    step = TEXT_STEP,
+    exitDuration = TEXT_EXIT_DURATION,
+    exitStep = TEXT_EXIT_STEP,
+  }: {
+    exitStart?: number;
+    duration?: number;
+    step?: number;
+    exitDuration?: number;
+    exitStep?: number;
+  } = {},
 ) {
   const lastProgress = useRef(0);
 
@@ -22,11 +39,17 @@ export function useRevealOnScroll(
       ref.current
         ?.querySelectorAll<HTMLElement>("[data-reveal]")
         .forEach((el, i) => {
-          const t = segment(p, start + i * step, duration);
-          el.style.transform = `translateY(${(1 - easeOutCubic(t)) * 105}%)`;
+          const shown = easeOutCubic(segment(p, start + i * step, duration));
+          const hidden =
+            exitStart === undefined
+              ? 0
+              : easeOutCubic(
+                  segment(p, exitStart + i * exitStep, exitDuration),
+                );
+          el.style.transform = `translateY(${(1 - shown * (1 - hidden)) * 105}%)`;
         });
     },
-    [ref, start, duration, step],
+    [ref, start, duration, step, exitStart, exitDuration, exitStep],
   );
 
   useScrollProgress((p) => {

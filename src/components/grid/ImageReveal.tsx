@@ -2,61 +2,60 @@
 
 import Image from "next/image";
 import { useRef } from "react";
-import { IMAGE_BLOCK, IMAGE_CELLS, cellStyle } from "@/config/grid";
-import { IMAGE_DURATION, REVEAL_START } from "@/config/timeline";
+import { COLS, IMAGE_BLOCK, blockStyle } from "@/config/grid";
+import {
+  EXIT_START,
+  IMAGE_DURATION,
+  IMAGE_EXIT_DURATION,
+  REVEAL_START,
+} from "@/config/timeline";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
-import { easeOutCubic, segment } from "@/lib/scroll";
+import { easeInOutCubic, easeOutCubic, segment } from "@/lib/scroll";
 
 /**
- * One photo spread across the open cells. Every cell slides its part of the
- * photo up at the same time.
+ * One photo covering the open block of cells. It slides up as a single piece
+ * on the way in. On exit it is wiped away in one sweep from its right edge to
+ * its left, leaving white behind (not the video).
  */
 export default function ImageReveal({ src }: { src: string }) {
-  const refs = useRef<(HTMLDivElement | null)[]>([]);
+  const slideRef = useRef<HTMLDivElement>(null);
+  const photoRef = useRef<HTMLDivElement>(null);
 
   useScrollProgress((p) => {
-    const t = easeOutCubic(segment(p, REVEAL_START, IMAGE_DURATION));
-    refs.current.forEach((el) => {
-      if (el) el.style.transform = `translateY(${(1 - t) * 100}%)`;
-    });
+    const slide = easeOutCubic(segment(p, REVEAL_START, IMAGE_DURATION));
+    if (slideRef.current) {
+      slideRef.current.style.transform = `translateY(${(1 - slide) * 100}%)`;
+    }
+
+    const wiped = easeInOutCubic(segment(p, EXIT_START, IMAGE_EXIT_DURATION));
+    if (photoRef.current) {
+      photoRef.current.style.clipPath = `inset(0 ${wiped * 100}% 0 0)`;
+    }
   });
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
-      {IMAGE_CELLS.map((cell, i) => (
+      {/* the white slide layer stays after the photo is wiped away */}
+      <div
+        className="absolute overflow-hidden"
+        style={blockStyle(IMAGE_BLOCK, " + 1px")}
+      >
         <div
-          key={i}
-          className="absolute overflow-hidden"
-          style={cellStyle(cell)}
+          ref={slideRef}
+          className="absolute inset-0 bg-white"
+          style={{ transform: "translateY(100%)" }}
         >
-          <div
-            ref={(el) => {
-              refs.current[i] = el;
-            }}
-            className="absolute inset-0 overflow-hidden"
-            style={{ transform: "translateY(100%)" }}
-          >
-            {/* the photo is sized to the whole block and offset per cell */}
-            <div
-              className="absolute"
-              style={{
-                width: `${IMAGE_BLOCK.cols * 100}%`,
-                height: `${IMAGE_BLOCK.rows * 100}%`,
-                left: `-${(cell.col - IMAGE_BLOCK.col) * 100}%`,
-                top: `-${(cell.row - IMAGE_BLOCK.row) * 100}%`,
-              }}
-            >
-              <Image
-                src={src}
-                alt=""
-                fill
-                sizes="40vw"
-                className="object-cover"
-              />
-            </div>
+          <div ref={photoRef} className="absolute inset-0">
+            <Image
+              src={src}
+              alt=""
+              fill
+              sizes={`${(IMAGE_BLOCK.cols / COLS) * 100}vw`}
+              className="object-cover"
+            />
           </div>
         </div>
-      ))}
+      </div>
     </div>
   );
 }

@@ -18,19 +18,24 @@ const USER_INPUT_EVENTS = ["wheel", "touchstart", "keydown", "mousedown"];
  * A tall scroll area with a sticky full-screen stage. Scrolling through it
  * produces a progress value (0..1) that children read via useScrollProgress.
  *
- * With `snapFrom`, letting go of the scroll snaps the stage: scrolling down
- * past that progress finishes the stage; anything else returns to the start.
+ * With `snapFrom`, letting go of the scroll snaps the stage:
+ * - before `snapFrom`: back to the start
+ * - between `snapFrom` and `snapTo`: scrolling down finishes at `snapTo`
+ *   (the fully revealed section), scrolling up returns to the start
+ * - past `snapTo` (the exit): scrolling down completes it, up returns to `snapTo`
  * `snapDuration` (ms) sets how slowly that glide runs.
  */
 export default function ScrollStage({
   children,
   length = SCROLL_LENGTH,
   snapFrom,
+  snapTo = 1,
   snapDuration = 3570,
 }: {
   children: ReactNode;
   length?: string;
   snapFrom?: number;
+  snapTo?: number;
   snapDuration?: number;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -93,8 +98,17 @@ export default function ScrollStage({
       const p = progress.current;
       if (p < SETTLE_EPSILON || p > 1 - SETTLE_EPSILON) return;
 
-      // only scrolling down past the trigger finishes the stage
-      const target = p >= snapFrom && direction > 0 ? 1 : 0;
+      const down = direction > 0;
+      let target: number;
+      if (p < snapFrom) {
+        target = 0; // before the trigger: back to the start
+      } else if (p < snapTo - SETTLE_EPSILON) {
+        target = down ? snapTo : 0; // finish the section, or give up on it
+      } else if (p <= snapTo + SETTLE_EPSILON) {
+        return; // resting on the finished section
+      } else {
+        target = down ? 1 : snapTo; // mid-exit: complete it, or come back
+      }
       glideTo(m.top + target * m.distance);
     };
 
@@ -124,7 +138,7 @@ export default function ScrollStage({
       if (frame) cancelAnimationFrame(frame);
       clearTimeout(settleTimer);
     };
-  }, [snapFrom, snapDuration]);
+  }, [snapFrom, snapTo, snapDuration]);
 
   return (
     <ScrollStageContext.Provider value={subscribe}>
