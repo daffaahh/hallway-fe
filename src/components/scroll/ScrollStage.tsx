@@ -5,6 +5,7 @@ import {
   ScrollStageContext,
   type ProgressListener,
 } from "@/hooks/useScrollProgress";
+import { ScrollControlContext } from "@/hooks/useGoToSection";
 import { SCROLL_LENGTH } from "@/config/timeline";
 import { clamp, easeInOutCubic } from "@/lib/scroll";
 
@@ -41,6 +42,7 @@ export default function ScrollStage({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listeners = useRef(new Set<ProgressListener>());
   const progress = useRef(0);
+  const scrollControl = useRef<((progress: number) => void) | null>(null);
 
   const subscribe = useCallback((listener: ProgressListener) => {
     listeners.current.add(listener);
@@ -63,12 +65,12 @@ export default function ScrollStage({
     };
 
     // window.scrollTo's smooth behavior has a fixed speed, so animate by hand
-    const glideTo = (target: number) => {
+    const glideTo = (target: number, duration = snapDuration) => {
       cancelGlide();
       const from = window.scrollY;
       const startedAt = performance.now();
       const step = (now: number) => {
-        const t = clamp((now - startedAt) / snapDuration);
+        const t = clamp((now - startedAt) / duration);
         window.scrollTo(0, from + (target - from) * easeInOutCubic(t));
         glide = t < 1 ? requestAnimationFrame(step) : 0;
       };
@@ -81,6 +83,15 @@ export default function ScrollStage({
       const distance = wrapper.offsetHeight - window.innerHeight;
       const top = window.scrollY + wrapper.getBoundingClientRect().top;
       return { distance, top };
+    };
+
+    // link navigation: glide to a progress, a bit longer for longer trips
+    scrollControl.current = (target) => {
+      const m = measure();
+      if (!m) return;
+      const y = m.top + target * m.distance;
+      const screens = Math.abs(y - window.scrollY) / window.innerHeight;
+      glideTo(y, clamp(screens * 150, 900, 3200));
     };
 
     const update = () => {
@@ -134,19 +145,27 @@ export default function ScrollStage({
       USER_INPUT_EVENTS.forEach((e) =>
         window.removeEventListener(e, cancelGlide),
       );
+      scrollControl.current = null;
       cancelGlide();
       if (frame) cancelAnimationFrame(frame);
       clearTimeout(settleTimer);
     };
   }, [snapFrom, snapTo, snapDuration]);
 
+  const scrollToProgress = useCallback(
+    (target: number) => scrollControl.current?.(target),
+    [],
+  );
+
   return (
-    <ScrollStageContext.Provider value={subscribe}>
-      <div ref={wrapperRef} className="relative" style={{ height: length }}>
-        <section className="sticky top-0 h-screen w-full overflow-hidden bg-white">
-          {children}
-        </section>
-      </div>
-    </ScrollStageContext.Provider>
+    <ScrollControlContext.Provider value={scrollToProgress}>
+      <ScrollStageContext.Provider value={subscribe}>
+        <div ref={wrapperRef} className="relative" style={{ height: length }}>
+          <section className="sticky top-0 h-screen w-full overflow-hidden bg-white">
+            {children}
+          </section>
+        </div>
+      </ScrollStageContext.Provider>
+    </ScrollControlContext.Provider>
   );
 }

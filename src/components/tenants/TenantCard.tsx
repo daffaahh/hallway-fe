@@ -4,7 +4,11 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/ui/Reveal";
 import { type Cell, cellStyle } from "@/config/grid";
-import { PHOTO_DURATION } from "@/config/timeline";
+import {
+  PHOTO_DURATION,
+  TENANT_PHOTO_EXIT_DURATION,
+  TENANT_TEXT_EXIT_DURATION,
+} from "@/config/timeline";
 import { type TenantPhoto } from "@/content/site";
 import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
@@ -24,10 +28,12 @@ export default function TenantCard({
   zoom,
   labelSide,
   start,
+  exitStart,
   overlay,
   overlayDelay,
   selectable,
   onSelect,
+  live,
 }: {
   cell: Cell;
   label: string;
@@ -37,6 +43,10 @@ export default function TenantCard({
   labelSide: "left" | "right";
   /** scroll progress at which the photo starts sliding up */
   start: number;
+  /** scroll progress at which the photo and label slide away again */
+  exitStart: number;
+  /** whether the card can be clicked (the scene is still on screen) */
+  live: boolean;
   /** photo to slide over this one, or null for none */
   overlay: TenantPhoto | null;
   overlayDelay: number;
@@ -57,10 +67,17 @@ export default function TenantCard({
     return () => cancelAnimationFrame(id);
   }, [overlay]);
 
-  useRevealOnScroll(labelRef, start + PHOTO_DURATION * 0.5);
+  useRevealOnScroll(labelRef, start + PHOTO_DURATION * 0.5, {
+    exitStart,
+    exitDuration: TENANT_TEXT_EXIT_DURATION,
+  });
 
   useScrollProgress((p) => {
-    const t = easeOutCubic(segment(p, start, PHOTO_DURATION));
+    const shown = easeOutCubic(segment(p, start, PHOTO_DURATION));
+    const gone = easeOutCubic(
+      segment(p, exitStart, TENANT_PHOTO_EXIT_DURATION),
+    );
+    const t = shown * (1 - gone);
     if (slideRef.current) {
       slideRef.current.style.transform = `translateY(${(1 - t) * 100}%)`;
     }
@@ -68,7 +85,7 @@ export default function TenantCard({
 
   return (
     <div
-      className="pointer-events-auto absolute"
+      className={`absolute ${live ? "pointer-events-auto" : "pointer-events-none"}`}
       data-cursor-label={selectable ? "Learn more" : undefined}
       role={selectable ? "button" : undefined}
       tabIndex={selectable ? 0 : undefined}

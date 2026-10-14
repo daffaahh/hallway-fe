@@ -41,7 +41,7 @@ export function useRevealOnScroll(
         .forEach((el, i) => {
           const shown = easeOutCubic(segment(p, start + i * step, duration));
           const hidden =
-            exitStart === undefined
+            exitStart === undefined || el.hasAttribute("data-reveal-persist")
               ? 0
               : easeOutCubic(
                   segment(p, exitStart + i * exitStep, exitDuration),

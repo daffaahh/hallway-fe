@@ -1,3 +1,5 @@
+import type { SectionKey } from "@/config/timeline";
+
 export const TAGLINE = "Rise of the Local Future";
 
 export const HASHTAGS = [
@@ -6,7 +8,20 @@ export const HASHTAGS = [
   "#PameranDiPasar",
 ];
 
-export const NAV_ITEMS = ["Tenants", "Event", "Visit"];
+export const LINKS = {
+  maps: "https://maps.app.goo.gl/nJAqeVHMwwJAt5np9",
+  instagram: "https://www.instagram.com/thehallwayspace_/",
+};
+
+/** A link to a section of the page, or out to another site. */
+export type LinkTarget =
+  { section: SectionKey } | { href: string; external?: boolean };
+
+export const NAV_ITEMS: ({ label: string } & LinkTarget)[] = [
+  { label: "Tenants", section: "tenants" },
+  { label: "Event", section: "event" },
+  { label: "Visit", href: LINKS.maps, external: true },
+];
 
 export const ABOUT_TITLE = "The Hallway";
 
@@ -18,6 +33,11 @@ export const ABOUT_PARAGRAPHS = [
 export const OPEN_HOURS = "Open Daily : 10.00 - 22.00";
 
 export const TENANTS_TITLE = "Tenants";
+
+export const TENANTS_CTA = {
+  lines: ["Be one of them.", "Join Berniaga di Selasar."],
+  button: "Join",
+};
 
 export type TenantPhoto = {
   src: string;
@@ -120,9 +140,38 @@ export const TENANT_CARDS: TenantCard[] = [
   },
 ];
 
+export const EVENT_TITLE = "Event";
+
+export const EVENT_COPY = {
+  paragraph:
+    "The Hallway Space has always been more than a place to shop. Our hallways regularly come alive with live music, markets, and community gatherings, and over the years we’ve welcomed acts like Murphy Radio, 510, Birubaru, and many more. Whether it’s a weekend gig or a pop-up market, there’s always a reason to come back.",
+  buttons: [
+    { label: "See Upcoming Events", href: "#" },
+    { label: "Host an Event With Us", href: "#" },
+  ],
+};
+
+export const FOOTER_COPY = {
+  address:
+    "Pasar Kosambi Lt. 2, Jl. Kebon Pisang, Kec. Sumur Bandung, Kota Bandung 40112",
+  email: "info@hallwayspace.com",
+  invite: "Be part of us?",
+  findUs: { label: "Come Find Us", href: LINKS.maps, external: true },
+  social: [
+    { label: "Instagram", href: LINKS.instagram, external: true },
+    { label: "LinkedIn", href: "#" },
+  ],
+  copyright: "©2026 Hallwayspace",
+  legal: [
+    { label: "Privacy policy", href: "#" },
+    { label: "Terms & conditions", href: "#" },
+  ],
+};
+
 export const ASSETS = {
   video: "/videos/background.mp4",
   logoLight: "/images/logo-white.png",
   logoDark: "/images/logo.png",
   photo: "/images/about.JPG",
+  eventVideo: "/videos/event.mp4",
 };

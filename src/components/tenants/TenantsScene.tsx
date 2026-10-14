@@ -13,6 +13,10 @@ import {
   BLACK_STEP,
   PHOTO_START,
   PHOTO_STEP,
+  TENANT_EXIT_START,
+  TENANT_PHOTO_EXIT_STEP,
+  TENANT_TEXT_EXIT_DURATION,
+  TENANT_TEXT_EXIT_STEP,
   TITLE_DURATION,
   TITLE_START,
 } from "@/config/timeline";
@@ -22,12 +26,15 @@ import { useScrollProgress } from "@/hooks/useScrollProgress";
 import { segment } from "@/lib/scroll";
 import TenantCard from "./TenantCard";
 import TenantPanel from "./TenantPanel";
+import TenantsCta from "./TenantsCta";
 
 const OVERLAY_STAGGER_MS = 150;
 
 /**
  * Tenants scene: two cells fade to black, three labelled photos slide up one
  * after another, and the title rises in the bottom-left corner.
+ *
+ * After a pause the whole scene slides away (see EventTransition).
  *
  * Clicking a photo opens its category: the other two photos are replaced by
  * that category's two sub photos (sliding up), the cards are relabelled
@@ -38,8 +45,15 @@ export default function TenantsScene() {
   const blackRefs = useRef<(HTMLDivElement | null)[]>([]);
   const titleRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<string | null>(null);
+  // false once the scene has started leaving (or has not arrived yet)
+  const [live, setLive] = useState(true);
 
-  useRevealOnScroll(titleRef, TITLE_START, { duration: TITLE_DURATION });
+  useRevealOnScroll(titleRef, TITLE_START, {
+    duration: TITLE_DURATION,
+    exitStart: TENANT_EXIT_START,
+    exitDuration: TENANT_TEXT_EXIT_DURATION,
+    exitStep: TENANT_TEXT_EXIT_STEP,
+  });
 
   useScrollProgress((p) => {
     blackRefs.current.forEach((el, i) => {
@@ -47,8 +61,10 @@ export default function TenantsScene() {
       const t = segment(p, BLACK_START + i * BLACK_STEP, BLACK_DURATION);
       el.style.opacity = String(t);
     });
-    // scrolling back out of the scene resets it
-    if (p < BLACK_START) setActive((current) => (current ? null : current));
+    // leaving the scene in either direction closes an open category
+    const inScene = p >= BLACK_START && p < TENANT_EXIT_START;
+    setLive(inScene);
+    if (!inScene) setActive((current) => (current ? null : current));
   });
 
   useEffect(() => {
@@ -93,6 +109,8 @@ export default function TenantsScene() {
             zoom={card.zoom}
             labelSide={card.labelSide}
             start={PHOTO_START + i * PHOTO_STEP}
+            exitStart={TENANT_EXIT_START + i * TENANT_PHOTO_EXIT_STEP}
+            live={live}
             overlay={overlay}
             overlayDelay={overlay ? replaced * OVERLAY_STAGGER_MS : 0}
             selectable={!activeCard}
@@ -101,7 +119,13 @@ export default function TenantsScene() {
         );
       })}
 
-      <TenantPanel category={active} names={activeCard?.tenants ?? null} />
+      <TenantsCta live={live} />
+
+      <TenantPanel
+        category={active}
+        names={activeCard?.tenants ?? null}
+        live={live}
+      />
 
       {/* while a category is open, a click anywhere closes it */}
       {active && (

@@ -1,4 +1,8 @@
 import AboutSection from "@/components/about/AboutSection";
+import EventSection from "@/components/event/EventSection";
+import EventVideo from "@/components/event/EventVideo";
+import EventTransition from "@/components/event/EventTransition";
+import FooterSection from "@/components/footer/FooterSection";
 import GridTransition from "@/components/grid/GridTransition";
 import HeroBackdrop from "@/components/hero/HeroBackdrop";
 import HeroIntro from "@/components/hero/HeroIntro";
@@ -21,6 +25,10 @@ export default function Home() {
         <Navbar />
         <AboutSection />
         <TenantsScene />
+        <EventVideo />
+        <EventTransition />
+        <EventSection />
+        <FooterSection />
         <TenantsCursor />
         <HeroIntro />
       </ScrollStage>

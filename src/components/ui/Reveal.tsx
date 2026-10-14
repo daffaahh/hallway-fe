@@ -11,16 +11,23 @@ export function Reveal({
   as: Tag = "div",
   className = "",
   style,
+  persist = false,
   children,
 }: {
   as?: "div" | "h2";
   className?: string;
   style?: CSSProperties;
+  /** stays in place when its parent slides everything away on exit */
+  persist?: boolean;
   children: ReactNode;
 }) {
   return (
     <Tag className={`overflow-hidden ${className}`} style={style}>
-      <div data-reveal style={{ transform: "translateY(105%)" }}>
+      <div
+        data-reveal
+        data-reveal-persist={persist ? "" : undefined}
+        style={{ transform: "translateY(105%)" }}
+      >
         {children}
       </div>
     </Tag>

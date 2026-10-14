@@ -20,6 +20,7 @@ All files live in `public/`:
 | Path | Use |
 | --- | --- |
 | `videos/background.mp4` | Hero background video |
+| `videos/event.mp4` | Event section video (top two rows) |
 | `images/logo-white.png` | Logo in the hero (over the video) |
 | `images/logo.png` | Logo in the navbar (over the white page) |
 | `images/about.JPG` | Photo in the about section (`thehallway.webp` is no longer referenced) |
@@ -36,7 +37,11 @@ src/
 │   ├── hero/                   HeroBackdrop (video + overlay), HeroIntro (logo, tagline)
 │   ├── grid/                   GridTransition = CoverPanels + ImageReveal + GridLines
 │   ├── navbar/Navbar.tsx       Fixed navbar (white + mix-blend-difference), "Collaborate ++" trigger
-│   ├── tenants/                TenantsScene (black cells, title), TenantCard (photo + label + overlay), TenantPanel (Learn More + tenant list), TenantsCursor
+│   ├── footer/FooterSection.tsx Footer laid out cell by cell on the grid
+│   ├── event/EventSection.tsx  Event title, copy + buttons on the last grid row
+│   ├── event/EventVideo.tsx    Event video under the black panels (top two rows)
+│   ├── event/EventTransition.tsx Tenants → event: grid rules + black panels rising column by column
+│   ├── tenants/                TenantsScene (black cells, title), TenantCard (photo + label + overlay), TenantPanel (Learn More + tenant list), TenantsCta (copy + Join button), TenantsCursor
 │   ├── about/AboutSection.tsx  Title, paragraph, "Learn More ++"
 │   ├── collaborate/            Slide-in "Let's Collaborate" form
 │   └── ui/Reveal.tsx           Slide-up text masks (Reveal, RevealLines)
@@ -60,6 +65,10 @@ src/
   <Navbar />
   <AboutSection />
   <TenantsScene />
+  <EventVideo />
+  <EventTransition />
+  <EventSection />
+  <FooterSection />
   <HeroIntro />
 </ScrollStage>
 ```
@@ -81,6 +90,11 @@ Timeline (fractions of the scroll distance, defined in `config/timeline.ts`):
 | Hold | About stays put for `HOLD_VH` of scrolling before anything leaves |
 | Exit | The about text slides back down behind its masks, and the photo is wiped away in one continuous sweep from its right edge to its left, leaving white behind (not the video). The navbar is `fixed` and stays |
 | Tenants (`TENANTS_VH`) | Grid cells (col, row): (1,1) and (5,3) fade to black one after the other; photos slide up in (2,2) Hobbies, (4,3) FnB and (5,2) Fashion, left to right (`TenantCard`); each label sits above its photo, outside it (Hobbies at the photo's right edge, FnB and Fashion at the left edge, set by `labelSide` in `content/site.ts`), and slides up from behind a mask; "Tenants" rises in the bottom-left corner (`TenantsScene`). The navbar keeps working: its white + `mix-blend-difference` colors flip to white over the black cell |
+| Hold (`TENANTS_HOLD_VH`) | The tenants scene stays put |
+| Event transition (`EVENT_VH`) | The tenants photos, labels, title and Learn More slide away (photos down behind their cells, text behind its masks). The grid rules draw in (verticals rise from the bottom, as in the hero) and **stay**: unlike the hero they never retract. Black panels cover the cells one column after another from the right, each column filling as one sweep from the bottom up (a staircase of black). What remains is a black screen with the grid (the event section, to be built). The navbar keeps working and reads white on the black |
+| Event (`EVENT_SHOW_VH`) | On the black screen the "EVENT" title, the copy and two buttons slide up from behind their masks (title, paragraph line by line, then buttons). They live on the columns of the **last grid row**: the title at its top, then the paragraph (columns 1–3) and the two buttons (columns 4 and 5) vertically centered in the space between the title and the bottom edge. While they rise, the black panels of the two top rows sink back down column by column (`release` in `CoverPanels`), uncovering `videos/event.mp4` behind them (`EventVideo`: filling the two top rows, switched on only once the panels cover everything). The grid rules stay over the video and the last row stays black. The navbar drops its blend mode over the video and is plain white. Buttons are hollow white squares that fill white from left to right on hover; links are still `href="#"`. Copy lives in `EVENT_TITLE` / `EVENT_COPY` in `content/site.ts` |
+| Hold (`EVENT_HOLD_VH`) | The event section stays put |
+| Footer transition (`FOOTER_VH`) | The event title, copy and buttons slide down behind their masks, and so do the navbar logo and links (**Collaborate stays**, it is `persist`ent). The black panels of the two top rows rise again over the video (`refill` in `CoverPanels`), three cells fade to white, and the footer content slides up (`FooterSection`) |
 
 Intro → about percentages are fractions of that phase only (`at(...)` in `config/timeline.ts`). The phase lengths are set in viewport heights: `INTRO_VH`, `HOLD_VH` and `EXIT_VH`; the stage length and all progress values are derived from them.
 
@@ -90,9 +104,42 @@ Clicking a tenant photo (Hobbies, FnB or Fashion) opens that category. The click
 
 Every photo carries the tenant it shows (`name` in `content/site.ts`); once a category is open that name is the photo's label, so labels always follow their photo. `tenants` is the order the list shows them. Hobbies: Pensil dan Kertas (`2.JPG`), Shadow Goods (`hobbies-1.JPG`), The Throne Room (`hobbies-2.JPG`). Fashion: Wearbobe (`3.JPG`), Lil public (`fashion-1.JPG`), eternalworks (`fashion-2.JPG`). FnB: Gelora Fantasi (`1.JPG`), Kedai Jaya Bersama (`FnB-1.jpeg`), Rameninpo (`FnB-2.jpeg`). Source photos with transparent side bars need `zoom` to crop them (a bar of 12.5% per side → `zoom: 1.34`). File names are case-sensitive on Linux hosts (`2.JPG`, `hobbies-1.JPG`).
 
+### Links
+
+`SiteLink` renders every site link. Targets live in `content/site.ts`:
+
+- **Section links** (`{ section: "tenants" | "event" | "hero" }`): glide the page to that section's resting scroll position (`SECTION_PROGRESS` in `config/timeline.ts`; the stage exposes the glide through `ScrollControlContext`, used via `useGoToSection`). Tenants and Event (navbar and footer) use these, and the navbar logo goes to the hero. The glide takes longer for longer trips and stops as soon as the user scrolls, touches or presses a key.
+- **External links** (`{ href, external: true }`): open in a new tab (`noopener noreferrer`). Visit (navbar and footer) and "Come Find Us" go to the Google Maps link, Instagram to the Hallway Space profile; both URLs are in `LINKS`.
+- Still `href="#"` placeholders: Learn More, Join, the two event buttons, LinkedIn, Privacy policy and Terms & conditions.
+
+### Footer
+
+`FooterSection` is laid out cell by cell on the 5×3 grid (white cells: page links at col 1 row 2, "Come Find Us" at col 4 row 2, social links at col 2 row 3, set in `FOOTER_WHITE_CELLS`):
+
+| Cell (col, row) | Content |
+| --- | --- |
+| (2, 1) | Address and email |
+| (3, 1) | "Be part of us?" (bottom right of the cell) |
+| (5, 1) | the navbar's **Collaborate ++** (it stays on screen) |
+| (1, 2) white | Page links (the navbar items: Tenants, Event, Visit) |
+| (4, 2) white | "Come Find Us" with an arrow |
+| (1, 3) | ©2026 Hallwayspace |
+| (2, 3) white | Instagram, LinkedIn |
+| (5, 3) | Privacy policy, Terms & conditions |
+
+Copy lives in `FOOTER_COPY` in `content/site.ts`.
+
+### Tenants call to action
+
+`TenantsCta` sits centered between the Hobbies and Fashion photos (the two middle columns of the photo row): "Be one of them." / "Join Berniaga di Selasar." in a size between the body text and the "Tenants" title, plus a hollow square **Join** button. On hover a dark fill sweeps across the button from left to right and the label turns white; it keeps the native cursor (`data-cursor-native`) and stays clickable while a category is open. Copy lives in `TENANTS_CTA` in `content/site.ts`; the link is still `href="#"`.
+
 ### Tenants cursor
 
 `TenantsCursor` swaps the mouse cursor for a hollow circle (white + `mix-blend-difference`, so it reads on white, black and photos) once the tenants scene starts (`BLACK_START`). It reads "Click one" and changes to the label of the element under it: anything with a `data-cursor-label` attribute, e.g. a tenant photo and its label ("Learn more"; "Close" while a category is open). The native cursor comes back over the navbar, the collaborate dialog and anything marked `data-cursor-native` (the Learn More ++ link, whose + → × hover then plays as usual), and the effect is off on touch devices (`(pointer: fine)` only).
+
+### Shared transition components
+
+`CoverPanels` grows panels over a set of cells column by column from the right (`fill` colour, growth `origin`, optional `rise` so a column fills bottom-to-top as one sweep). `GridLines` takes a `timing` (`HERO_LINES` draws then retracts, `EVENT_LINES` draws and stays). `GridTransition` wires them in white for hero → about (plus the photo); `EventTransition` wires them in black for tenants → event. Timing lives in `config/timeline.ts`.
 
 ### Smooth scrolling
 

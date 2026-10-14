@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BLACK_START } from "@/config/timeline";
+import { BLACK_START, TENANT_EXIT_START } from "@/config/timeline";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
 
 const DEFAULT_LABEL = "Click one";
@@ -39,8 +39,11 @@ export default function TenantsCursor() {
     let frame = 0;
     let active = false;
 
+    const inScene = () =>
+      progress.current >= BLACK_START && progress.current < TENANT_EXIT_START;
+
     const loop = () => {
-      if (progress.current < BLACK_START) {
+      if (!inScene()) {
         setActive(false);
         return;
       }
@@ -75,7 +78,7 @@ export default function TenantsCursor() {
       const native = !!target?.closest(
         "header, [role=dialog], [data-cursor-native]",
       );
-      setActive(progress.current >= BLACK_START && !native);
+      setActive(inScene() && !native);
       const hot = target?.closest("[data-cursor-label]");
       setLabel(hot?.getAttribute("data-cursor-label") ?? DEFAULT_LABEL);
     };

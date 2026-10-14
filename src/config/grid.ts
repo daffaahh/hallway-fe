@@ -51,10 +51,13 @@ export const LINES = [
  */
 export const IMAGE_BLOCK = { col: 0, row: 1, cols: 3, rows: 1 };
 
-const ALL_CELLS: Cell[] = Array.from({ length: COLS * ROWS }, (_, i) => ({
-  col: i % COLS,
-  row: Math.floor(i / COLS),
-}));
+export const ALL_CELLS: Cell[] = Array.from(
+  { length: COLS * ROWS },
+  (_, i) => ({
+    col: i % COLS,
+    row: Math.floor(i / COLS),
+  }),
+);
 
 const inImageBlock = (c: Cell) =>
   c.col >= IMAGE_BLOCK.col &&
@@ -73,6 +76,13 @@ export const TENANT_PHOTO_CELLS: Cell[] = [
   { col: 1, row: 1 },
   { col: 3, row: 2 },
   { col: 4, row: 1 },
+];
+
+// Footer scene (zero-based): cells that fade to white and hold dark links.
+export const FOOTER_WHITE_CELLS: Cell[] = [
+  { col: 0, row: 1 }, // page links
+  { col: 3, row: 1 }, // "Come Find Us"
+  { col: 1, row: 2 }, // social links
 ];
 
 export const COVER_CELLS = ALL_CELLS.filter((c) => !inImageBlock(c));

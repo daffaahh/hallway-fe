@@ -4,7 +4,13 @@ import { useRef, useState, type ReactNode } from "react";
 import { PlusLabel } from "@/components/ui/PlusLabel";
 import { Reveal } from "@/components/ui/Reveal";
 import { colPercent } from "@/config/grid";
-import { TITLE_DURATION, TITLE_START } from "@/config/timeline";
+import {
+  TENANT_EXIT_START,
+  TENANT_TEXT_EXIT_DURATION,
+  TENANT_TEXT_EXIT_STEP,
+  TITLE_DURATION,
+  TITLE_START,
+} from "@/config/timeline";
 import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
 
 const MS = 600;
@@ -44,17 +50,23 @@ function SlideUp({
 export default function TenantPanel({
   category,
   names,
+  live,
 }: {
   /** the open category, or null when none is open */
   category: string | null;
   /** the open category's tenants, or null when none is open */
   names: string[] | null;
+  /** false once the scene has started leaving: the link stops reacting */
+  live: boolean;
 }) {
   const open = category !== null;
   const learnMoreRef = useRef<HTMLDivElement>(null);
 
   useRevealOnScroll(learnMoreRef, TITLE_START + TITLE_DURATION * 0.4, {
     duration: TITLE_DURATION,
+    exitStart: TENANT_EXIT_START,
+    exitDuration: TENANT_TEXT_EXIT_DURATION,
+    exitStep: TENANT_TEXT_EXIT_STEP,
   });
 
   // keep the last category so the text can slide away before it is replaced
@@ -93,7 +105,7 @@ export default function TenantPanel({
           <a
             href="#"
             data-cursor-native
-            className="group pointer-events-auto block text-sm font-bold uppercase tracking-wide text-neutral-900 md:text-[clamp(14px,1.9vh,20px)]"
+            className={`group block ${live ? "pointer-events-auto" : "pointer-events-none"} text-sm font-bold uppercase tracking-wide text-neutral-900 md:text-[clamp(14px,1.9vh,20px)]`}
           >
             <PlusLabel>Learn More</PlusLabel>
           </a>
